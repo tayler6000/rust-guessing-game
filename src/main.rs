@@ -44,7 +44,8 @@ impl Game {
     }
 
     fn play(&mut self) {
-        println!("Guess the number!");
+        println!("Guess The Number v1.0.0!");
+        println!("By tayler6000");
 
         self.secret_number = rand::thread_rng().gen_range(MIN, self.get_max() + 1);
 
