@@ -4,7 +4,6 @@ use std::{cmp::Ordering, io};
 
 const MIN: u32 = 1;
 const MAX: u32 = 100;
-const BIG_MAX: u32 = 1_000_000;
 
 enum Choice {
     PlayAgain,
@@ -12,20 +11,23 @@ enum Choice {
 }
 
 struct Game {
-    won_before: bool,
-    secret_number: u32
+    secret_number: u32,
+    multiplier: u32,
 }
 
 impl Game {
-    fn new() -> Game{
+    fn new() -> Game {
         Game {
-            won_before: false,
-            secret_number: 0
+            secret_number: 0,
+            multiplier: 1,
         }
     }
 
+    fn get_max(&self) -> u32 {
+        MAX * self.multiplier
+    }
+
     fn handle_win(&mut self) -> Choice {
-        self.won_before = true;
         println!("{}", "You Win!".green());
         println!("\nWould you like to play again? [y/N]");
         let mut buffer = String::new();
@@ -33,7 +35,9 @@ impl Game {
             .read_line(&mut buffer)
             .expect("Failed to read line");
         if buffer.trim().to_lowercase().eq("y") {
-            self.secret_number = rand::thread_rng().gen_range(MIN, BIG_MAX);
+            self.multiplier += 1;
+            // TODO: Detect overflow errors and congratulate on being the ultimate winner!
+            self.secret_number = rand::thread_rng().gen_range(MIN, self.get_max() + 1);
             return Choice::PlayAgain;
         }
         Choice::Quit
@@ -42,15 +46,10 @@ impl Game {
     fn play(&mut self) {
         println!("Guess the number!");
 
-        self.secret_number = rand::thread_rng().gen_range(MIN, MAX);
-        self.won_before = false;
+        self.secret_number = rand::thread_rng().gen_range(MIN, self.get_max() + 1);
 
         loop {
-            let max_in_use = match self.won_before {
-                true => BIG_MAX,
-                false => MAX
-            };
-            println!("Please input your guess ({}-{}).", MIN, max_in_use);
+            println!("Please input your guess ({}-{}).", MIN, self.get_max());
 
             let mut guess = String::new();
 
@@ -77,18 +76,16 @@ impl Game {
             match guess.cmp(&self.secret_number) {
                 Ordering::Less => println!("{}", "Too small!".yellow()),
                 Ordering::Greater => println!("{}", "Too big!".yellow()),
-                Ordering::Equal => {
-                    match self.handle_win() {
-                        Choice::Quit => break,
-                        _ => continue
-                    }
-                }
+                Ordering::Equal => match self.handle_win() {
+                    Choice::Quit => break,
+                    _ => continue,
+                },
             }
         }
     }
 }
 
-fn main(){
+fn main() {
     let mut game = Game::new();
     game.play();
 }
